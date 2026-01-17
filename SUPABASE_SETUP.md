@@ -190,8 +190,7 @@ NODE_ENV=development
 ### 5.1 Start the Server
 
 ```bash
-cd pragati-backend
-npm start
+
 ```
 
 ### 5.2 Verify Connection
