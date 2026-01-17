@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pragati - Digital Labour Haat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://rsms.me/">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <style>
+        :root {
+            --pragati-blue: #2563eb;
+            --pragati-blue-light: #eff6ff;
+            --pragati-green: #16a34a;
+            --pragati-red: #dc2626;
+            --gray-text: #4b5563;
+            --gray-light: #f3f4f6;
+            --gray-border: #d1d5db;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #111827;
+            /* Dark background for 3D effect */
+            overflow-x: hidden;
+            /* Prevent horizontal scrollbars */
+            overflow-y: auto;
+            /* Allow vertical scroll on content */
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .card {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            padding: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        .btn:disabled {
+            background-color: #4b5563;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background-color: var(--pragati-blue);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-danger {
+            background-color: var(--pragati-red);
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background-color: #b91c1c;
+        }
+
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--pragati-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.5);
+        }
+
+        .skill-icon {
+            border: 2px solid var(--gray-border);
+            transition: all 0.2s ease;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .skill-icon:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-color: #93c5fd;
+        }
+
+        .skill-icon.selected {
+            border-color: var(--pragati-blue);
+            background-color: var(--pragati-blue-light);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: translateY(-4px);
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="font-sans text-white">
+    <canvas id="bg-canvas"></canvas>
+    <div id="app" class="min-h-screen flex flex-col">
+
+        <!-- Header -->
+        <header class="bg-white/5 backdrop-blur-md text-white p-4 border-b border-white/20 sticky top-0 z-40">
+            <div class="container mx-auto flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <img src="प्रगति (1).png" alt="Pragati Logo" class="h-10 w-10">
+                    <h1 class="text-2xl font-bold">प्रगति | PRAGATI </h1>
+                </div>
+                <div id="header-actions" class="hidden items-center space-x-5">
+                    <button id="profileBtn" class="hover:text-blue-400 transition">
+                        <i class="fas fa-user-circle text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow container mx-auto p-4 md:p-6 flex flex-col">
+            <!-- Login Screen -->
+            <div id="loginScreen" class="max-w-md w-full mx-auto card my-auto">
+                <div class="text-center mb-8">
+                    <img src="प्रगति (1).png" alt="Pragati Logo" class="h-24 w-24 mx-auto mb-4">
+                    <h2 class="text-3xl font-bold">प्रगति | PRAGATI</h2>
+                    <p class="text-gray-300 mt-2">Connecting workers with opportunities.</p>
+                    <p class="text-gray-200 mt-2 font-semibold text-lg">Right काम, Right Pay</p>
+                </div>
+
+                <div id="loginForm" class="space-y-4 animate-fade-in">
+                    <div>
+                        <label for="nameInput" class="block mb-2 font-semibold">Your Name</label>
+                        <input type="text" id="nameInput" class="form-input" placeholder="Enter your full name">
+                    </div>
+                    <div>
+                        <label class="block mb-2 font-semibold">I am a:</label>
+                        <select id="userTypeSelect" class="form-input">
+                            <option value="worker">Worker</option>
+                            <option value="contractor">Contractor</option>
+                        </select>
+                    </div>
+                    <button id="loginBtn" class="btn btn-primary w-full text-base py-3">
+                        Login / Register
+                    </button>
+                </div>
+            </div>
+
+            <!-- Worker Dashboard -->
+            <div id="workerDashboard" class="hidden w-full">
+                <div class="card mb-6">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center">
+                        <i class="fas fa-user-tie text-blue-400 mr-3"></i>
+                        Worker Dashboard
+                    </h2>
+
+                    <div id="checkInSection">
+                        <div class="mb-6 p-4 bg-white/5 border border-white/20 rounded-lg">
+                            <h3 class="text-lg font-semibold mb-2 text-blue-300">Ready for your next job?</h3>
+                            <div class="flex items-center text-gray-300">
+                                <i id="locationIcon" class="fas fa-map-marker-alt text-red-500 mr-2"></i>
+                                <span id="locationStatus">Detecting your location...</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <p class="mb-3 font-semibold">Select your primary skill:</p>
+                            <div id="skillSelectionContainer" class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                <!-- Skill Icons will be added by JS -->
+                            </div>
+                        </div>
+
+                        <button id="checkInBtn" class="btn btn-primary w-full text-lg py-3" disabled>
+                            <i class="fas fa-check-circle mr-2"></i>
+                            Check In & Be Visible
+                        </button>
+                    </div>
+
+                    <div id="checkedInSection" class="hidden">
+                        <div class="bg-green-500/20 border-l-4 border-green-400 text-green-200 p-4 rounded-md mb-6"
+                            role="alert">
+                            <p class="font-bold">You are checked in!</p>
+                            <p id="checkedInDetails" class="text-sm">You are now visible to nearby contractors.</p>
+                        </div>
+
+                        <div class="mb-6">
+                            <h3 class="text-xl font-semibold mb-4">Available Jobs Nearby</h3>
+                            <div id="jobListWorker" class="space-y-4">
+                                <p class="text-gray-400 text-center py-4">No jobs posted in your area yet...</p>
+                            </div>
+                        </div>
+
+                        <button id="checkOutBtn" class="btn btn-danger w-full text-lg py-3">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            Check Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contractor Dashboard -->
+            <div id="contractorDashboard" class="hidden w-full">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="card">
+                            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                                <i class="fas fa-bullhorn text-green-400 mr-3"></i>
+                                Broadcast a Job
+                            </h2>
+                            <div class="mb-4">
+                                <label for="jobDescription" class="block mb-2 font-semibold">Job Details</label>
+                                <textarea id="jobDescription" class="form-input" rows="3"
+                                    placeholder="e.g., Need 5 masons for a 3-day construction project."></textarea>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label for="jobPayment" class="block mb-2 font-semibold">Payment (per day)</label>
+                                    <div class="relative">
+                                        <span
+                                            class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">₹</span>
+                                        <input type="number" id="jobPayment" class="form-input pl-8"
+                                            placeholder="Amount">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="jobTypeSelect" class="block mb-2 font-semibold">Job Type</label>
+                                    <select id="jobTypeSelect" class="form-input">
+                                        <option value="daily">Daily</option>
+                                        <option value="contract">Contract</option>
+                                        <option value="emergency">Emergency</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button id="broadcastJobBtn" class="btn btn-primary w-full text-lg py-3">
+                                Broadcast to Nearby Workers
+                            </button>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-1">
+                        <div class="card sticky top-24">
+                            <h3 class="text-xl font-semibold mb-4">Available Workers</h3>
+                            <div id="workerFilters" class="flex flex-wrap gap-2 mb-4">
+                                <!-- Filter buttons will be added by JS -->
+                            </div>
+                            <div id="workerList" class="space-y-3 h-96 overflow-y-auto pr-2">
+                                <p class="text-gray-400 text-center py-4">No workers available right now.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Jobs Screen -->
+            <div id="jobsScreen" class="hidden w-full">
+                <div class="card">
+                    <div class="flex items-center mb-6">
+                        <button id="backFromJobsBtn" class="btn btn-secondary mr-4"><i
+                                class="fas fa-arrow-left"></i></button>
+                        <h2 class="text-2xl font-bold flex items-center">
+                            <i class="fas fa-briefcase text-blue-400 mr-3"></i>
+                            All Available Jobs
+                        </h2>
+                    </div>
+                    <div id="jobListPublic" class="space-y-4">
+                        <!-- Public job list will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Screen -->
+            <div id="profileScreen" class="hidden w-full max-w-md mx-auto">
+                <div class="card">
+                    <div class="flex items-center mb-6">
+                        <button id="backFromProfileBtn" class="btn btn-secondary mr-4"><i
+                                class="fas fa-arrow-left"></i></button>
+                        <h2 class="text-2xl font-bold">Profile</h2>
+                    </div>
+                    <div class="text-center">
+                        <i class="fas fa-user-circle text-6xl mb-4"></i>
+                        <h2 id="profileName" class="text-3xl font-bold mb-2">User Name</h2>
+                        <p id="profileType" class="text-blue-300 capitalize mb-6">User Type</p>
+                        <button id="logoutBtn" class="btn btn-danger w-full">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer Navigation -->
+        <footer id="footerNav" class="bg-white/5 backdrop-blur-md border-t border-white/20 p-3 sticky bottom-0 hidden">
+            <div class="container mx-auto">
+                <div class="flex justify-around">
+                    <button id="homeBtn" class="nav-btn flex flex-col items-center text-blue-400">
+                        <i class="fas fa-home text-xl"></i>
+                        <span class="text-xs font-semibold">Home</span>
+                    </button>
+                    <button id="jobsBtn" class="nav-btn flex flex-col items-center text-gray-400 hover:text-blue-400">
+                        <i class="fas fa-briefcase text-xl"></i>
+                        <span class="text-xs">Jobs</span>
+                    </button>
+                    <button id="profileFooterBtn"
+                        class="nav-btn flex flex-col items-center text-gray-400 hover:text-blue-400">
+                        <i class="fas fa-user-circle text-xl"></i>
+                        <span class="text-xs">Profile</span>
+                    </button>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner"
+            class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+            <div class="text-white text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-4 mx-auto"></div>
+                <p class="text-lg">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Three.js for 3D Background -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+        <script>
+            // --- 3D BACKGROUND SETUP ---
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            const geometry = new THREE.IcosahedronGeometry(1, 0);
+            const material = new THREE.MeshStandardMaterial({ color: 0x2563eb, metalness: 0.5, roughness: 0.5 });
+            const shapes = [];
+
+            for (let i = 0; i < 100; i++) {
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.x = (Math.random() - 0.5) * 50;
+                mesh.position.y = (Math.random() - 0.5) * 50;
+                mesh.position.z = (Math.random() - 0.5) * 50;
+                mesh.rotation.x = Math.random() * 2 * Math.PI;
+                mesh.rotation.y = Math.random() * 2 * Math.PI;
+                mesh.scale.setScalar(Math.random() * 0.2 + 0.1);
+                shapes.push(mesh);
+                scene.add(mesh);
+            }
+
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(5, 5, 5);
+            scene.add(light);
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
+
+            camera.position.z = 5;
+
+            function animate() {
+                requestAnimationFrame(animate);
+                shapes.forEach(shape => {
+                    shape.rotation.x += 0.001;
+                    shape.rotation.y += 0.001;
+                });
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // --- APPLICATION LOGIC ---
+            // Use relative path for API (works on both localhost:3001 and deployed url)
+            const API_BASE_URL = '/api';
+            const SOCKET_URL = '/';
+            let socket;
+
+            let appState = { currentUser: null, selectedSkill: null, workerLocation: null };
+
+            // In-memory job list for display (since we don't have a job DB in this demo schema, we'll store received broadcasts)
+            let availableJobs = [];
+
+            const SKILLS = [
+                { id: 'mason', name: 'Mason', icon: 'fa-hammer' },
+                { id: 'carpenter', name: 'Carpenter', icon: 'fa-tools' },
+                { id: 'painter', name: 'Painter', icon: 'fa-paint-roller' },
+                { id: 'plumber', name: 'Plumber', icon: 'fa-faucet' },
+                { id: 'electrician', name: 'Electrician', icon: 'fa-bolt' },
+                { id: 'welder', name: 'Welder', icon: 'fa-fire' },
+                { id: 'laborer', name: 'Laborer', icon: 'fa-people-carry' },
+                { id: 'other', name: 'Other', icon: 'fa-ellipsis-h' },
+            ];
+
+            const DOMElements = {
+                mainContent: document.querySelector('main'),
+                loginScreen: document.getElementById('loginScreen'),
+                workerDashboard: document.getElementById('workerDashboard'),
+                contractorDashboard: document.getElementById('contractorDashboard'),
+                jobsScreen: document.getElementById('jobsScreen'),
+                profileScreen: document.getElementById('profileScreen'),
+                nameInput: document.getElementById('nameInput'),
+                userTypeSelect: document.getElementById('userTypeSelect'),
+                loginBtn: document.getElementById('loginBtn'),
+                checkInBtn: document.getElementById('checkInBtn'),
+                checkOutBtn: document.getElementById('checkOutBtn'),
+                checkedInSection: document.getElementById('checkedInSection'),
+                checkInSection: document.getElementById('checkInSection'),
+                locationStatus: document.getElementById('locationStatus'),
+                locationIcon: document.getElementById('locationIcon'),
+                skillContainer: document.getElementById('skillSelectionContainer'),
+                jobListWorker: document.getElementById('jobListWorker'),
+                jobListPublic: document.getElementById('jobListPublic'),
+                workerList: document.getElementById('workerList'),
+                workerFilters: document.getElementById('workerFilters'),
+                broadcastJobBtn: document.getElementById('broadcastJobBtn'),
+                jobDescription: document.getElementById('jobDescription'),
+                jobPayment: document.getElementById('jobPayment'),
+                jobTypeSelect: document.getElementById('jobTypeSelect'),
+                loadingSpinner: document.getElementById('loadingSpinner'),
+                headerActions: document.getElementById('header-actions'),
+                footerNav: document.getElementById('footerNav'),
+                homeBtn: document.getElementById('homeBtn'),
+                jobsBtn: document.getElementById('jobsBtn'),
+                profileBtn: document.getElementById('profileBtn'),
+                profileFooterBtn: document.getElementById('profileFooterBtn'),
+                profileName: document.getElementById('profileName'),
+                profileType: document.getElementById('profileType'),
+                logoutBtn: document.getElementById('logoutBtn'),
+                backFromJobsBtn: document.getElementById('backFromJobsBtn'),
+                backFromProfileBtn: document.getElementById('backFromProfileBtn'),
+            };
+
+            function initApp() {
+                // Initialize Socket
+                try {
+                    socket = io(SOCKET_URL);
+                    socket.on('connect', () => console.log('Connected to socket', socket.id));
+                    socket.on('newJobNotification', (job) => {
+                        console.log('New job received', job);
+                        availableJobs.unshift(job); // Add to top
+                        // Update UI if on relevant screens
+                        renderJobList(availableJobs, DOMElements.jobListWorker);
+                        renderJobList(availableJobs, DOMElements.jobListPublic);
+
+                        // Optional: Show notification toast
+                        alert(`New Job Alert: ${job.title} by ${job.contractor}`);
+                    });
+                } catch (e) {
+                    console.error('Socket connection failed', e);
+                }
+
+                const storedUser = localStorage.getItem('pragatiUser');
+                if (storedUser) {
+                    appState.currentUser = JSON.parse(storedUser);
+                    // Verify if user info is enough or needs re-login
+                    if (!appState.currentUser._id) {
+                        localStorage.removeItem('pragatiUser');
+                        showScreen('login');
+                    } else {
+                        showScreen(appState.currentUser.userType);
+                    }
+                } else {
+                    showScreen('login');
+                }
+                setupEventListeners();
+                populateSkills();
+                populateWorkerFilters();
+            }
+
+            function showScreen(screenName) {
+                // Hide all screens first
+                [DOMElements.loginScreen, DOMElements.workerDashboard, DOMElements.contractorDashboard, DOMElements.jobsScreen, DOMElements.profileScreen].forEach(el => el.classList.add('hidden'));
+                DOMElements.headerActions.classList.add('hidden');
+                DOMElements.footerNav.classList.add('hidden');
+                DOMElements.mainContent.classList.remove('items-center', 'justify-center');
+                DOMElements.mainContent.classList.add('items-start'); // Default for dashboards
+
+                updateActiveNav(screenName);
+
+                if (screenName === 'login') {
+                    DOMElements.mainContent.classList.add('items-center', 'justify-center');
+                    DOMElements.loginScreen.classList.remove('hidden');
+                } else {
+                    DOMElements.headerActions.classList.remove('hidden');
+                    DOMElements.footerNav.classList.remove('hidden');
+                    if (screenName === 'worker') {
+                        DOMElements.workerDashboard.classList.remove('hidden');
+                        getWorkerLocation();
+                        renderJobList(availableJobs, DOMElements.jobListWorker);
+                        // Check if already checked in (naive check based on local state/persistence needed in real app)
+                        // For now, we reset check-in state on refresh unless we query backend. 
+                        // Let's assume user needs to check in again for simplicity or stored in localStorage
+                    } else if (screenName === 'contractor') {
+                        DOMElements.contractorDashboard.classList.remove('hidden');
+                        findWorkers('all');
+                    } else if (screenName === 'jobs') {
+                        DOMElements.jobsScreen.classList.remove('hidden');
+                        renderJobList(availableJobs, DOMElements.jobListPublic);
+                    } else if (screenName === 'profile') {
+                        DOMElements.mainContent.classList.add('items-center');
+                        DOMElements.profileScreen.classList.remove('hidden');
+                        renderProfile();
+                    }
+                }
+            }
+
+            async function handleLogin() {
+                const name = DOMElements.nameInput.value;
+                const userType = DOMElements.userTypeSelect.value;
+                if (!name) { alert('Please enter your name.'); return; }
+                showLoading();
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, userType })
+                    });
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        appState.currentUser = data.user;
+                        localStorage.setItem('pragatiUser', JSON.stringify(data.user));
+                        showScreen(data.user.userType);
+                    } else {
+                        alert(data.message || 'Login failed');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert('Server error. Ensure backend is running.');
+                } finally {
+                    hideLoading();
+                }
+            }
+
+            function handleLogout() {
+                localStorage.removeItem('pragatiUser');
+                appState.currentUser = null;
+                showScreen('login');
+            }
+
+            function setupEventListeners() {
+                DOMElements.loginBtn.addEventListener('click', handleLogin);
+                DOMElements.checkInBtn.addEventListener('click', handleCheckIn);
+                DOMElements.checkOutBtn.addEventListener('click', handleCheckOut);
+                DOMElements.broadcastJobBtn.addEventListener('click', handleBroadcastJob);
+                DOMElements.logoutBtn.addEventListener('click', handleLogout);
+
+                // Navigation Listeners
+                const backToDashboard = () => showScreen(appState.currentUser.userType);
+                DOMElements.homeBtn.addEventListener('click', backToDashboard);
+                DOMElements.backFromJobsBtn.addEventListener('click', backToDashboard);
+                DOMElements.backFromProfileBtn.addEventListener('click', backToDashboard);
+
+                DOMElements.jobsBtn.addEventListener('click', () => showScreen('jobs'));
+                DOMElements.profileBtn.addEventListener('click', () => showScreen('profile'));
+                DOMElements.profileFooterBtn.addEventListener('click', () => showScreen('profile'));
+            }
+
+            function updateActiveNav(screenName) {
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    btn.classList.remove('text-blue-400');
+                    btn.classList.add('text-gray-400');
+                });
+
+                if (screenName === 'worker' || screenName === 'contractor') {
+                    DOMElements.homeBtn.classList.add('text-blue-400');
+                    DOMElements.homeBtn.classList.remove('text-gray-400');
+                } else if (screenName === 'jobs') {
+                    DOMElements.jobsBtn.classList.add('text-blue-400');
+                    DOMElements.jobsBtn.classList.remove('text-gray-400');
+                } else if (screenName === 'profile') {
+                    DOMElements.profileFooterBtn.classList.add('text-blue-400');
+                    DOMElements.profileFooterBtn.classList.remove('text-gray-400');
+                }
+            }
+
+            function populateSkills() {
+                DOMElements.skillContainer.innerHTML = '';
+                SKILLS.forEach(skill => {
+                    const div = document.createElement('div');
+                    div.className = 'skill-icon p-3 rounded-lg border text-center cursor-pointer text-white';
+                    div.dataset.skill = skill.id;
+                    div.innerHTML = `<i class="fas ${skill.icon} text-3xl mb-2 text-blue-400"></i><p class="text-sm font-semibold">${skill.name}</p>`;
+                    div.addEventListener('click', () => {
+                        document.querySelectorAll('.skill-icon').forEach(i => i.classList.remove('selected'));
+                        div.classList.add('selected');
+                        appState.selectedSkill = skill.id;
+                        // If location is already known, enable button
+                        if (appState.workerLocation) DOMElements.checkInBtn.disabled = false;
+                    });
+                    DOMElements.skillContainer.appendChild(div);
+                });
+            }
+
+            function getWorkerLocation() {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        appState.workerLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+                        DOMElements.locationStatus.textContent = 'Location detected successfully!';
+                        DOMElements.locationIcon.classList.remove('animate-pulse', 'text-red-500');
+                        DOMElements.locationIcon.classList.add('text-green-500');
+                        if (appState.selectedSkill) DOMElements.checkInBtn.disabled = false;
+                    },
+                    () => {
+                        DOMElements.locationStatus.textContent = 'Location access denied.';
+                        DOMElements.locationIcon.classList.remove('animate-pulse');
+                    }
+                );
+            }
+
+            async function handleCheckIn() {
+                if (!appState.selectedSkill || !appState.workerLocation) { alert('Please select a skill and enable location.'); return; }
+                showLoading();
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/worker/check-in`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: appState.currentUser._id,
+                            skill: appState.selectedSkill,
+                            coordinates: [appState.workerLocation.lng, appState.workerLocation.lat]
+                        })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        DOMElements.checkInSection.classList.add('hidden');
+                        DOMElements.checkedInSection.classList.remove('hidden');
+                        DOMElements.checkInBtn.disabled = true;
+                    } else {
+                        alert(data.message || 'Check-in failed');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert('Network error');
+                } finally {
+                    hideLoading();
+                }
+            }
+
+            async function handleCheckOut() {
+                showLoading();
+                try {
+                    const res = await fetch(`${API_BASE_URL}/worker/check-out`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: appState.currentUser._id })
+                    });
+
+                    if (res.ok) {
+                        DOMElements.checkedInSection.classList.add('hidden');
+                        DOMElements.checkInSection.classList.remove('hidden');
+                        DOMElements.checkInBtn.disabled = false;
+                    } else {
+                        alert('Check-out failed');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert('Network error');
+                } finally {
+                    hideLoading();
+                }
+            }
+
+            function renderJobList(jobs, container) {
+                container.innerHTML = '';
+                if (!jobs || jobs.length === 0) {
+                    container.innerHTML = '<p class="text-gray-400 text-center py-4">No jobs available right now.</p>';
+                    return;
+                }
+                jobs.forEach(job => {
+                    const jobEl = document.createElement('div');
+                    jobEl.className = 'bg-white/5 p-4 rounded-lg border border-white/20 animate-fade-in';
+                    jobEl.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-semibold text-lg">${job.title}</h4>
+                    <span class="text-xs px-2 py-1 rounded-full bg-blue-500/30 text-blue-200">${job.type}</span>
+                </div>
+                <p class="text-sm text-gray-300 mb-3">Posted by: ${job.contractor}</p>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="font-semibold text-green-400 text-lg">${job.payment}</span>
+                    <button class="btn btn-secondary text-xs py-1 px-3">View Details</button>
+                </div>`;
+                    container.appendChild(jobEl);
+                });
+            }
+
+            function renderProfile() {
+                if (appState.currentUser) {
+                    DOMElements.profileName.textContent = appState.currentUser.name;
+                    DOMElements.profileType.textContent = appState.currentUser.userType;
+                }
+            }
+
+            function populateWorkerFilters() {
+                DOMElements.workerFilters.innerHTML = '';
+                const allBtn = document.createElement('button');
+                allBtn.className = 'worker-filter px-3 py-1 rounded-full bg-blue-600 text-white text-sm';
+                allBtn.dataset.skill = 'all';
+                allBtn.textContent = 'All';
+                allBtn.addEventListener('click', (e) => filterAndRenderWorkers(e.target));
+                DOMElements.workerFilters.appendChild(allBtn);
+
+                SKILLS.forEach(skill => {
+                    const btn = document.createElement('button');
+                    btn.className = 'worker-filter px-3 py-1 rounded-full bg-white/10 text-gray-200 text-sm';
+                    btn.dataset.skill = skill.id;
+                    btn.innerHTML = `<i class="fas ${skill.icon} mr-1"></i> ${skill.name}`;
+                    btn.addEventListener('click', (e) => filterAndRenderWorkers(e.target));
+                    DOMElements.workerFilters.appendChild(btn);
+                });
+            }
+
+            function filterAndRenderWorkers(clickedButton) {
+                document.querySelectorAll('.worker-filter').forEach(btn => {
+                    btn.classList.remove('bg-blue-600', 'text-white');
+                    btn.classList.add('bg-white/10', 'text-gray-200');
+                });
+                clickedButton.classList.add('bg-blue-600', 'text-white');
+                clickedButton.classList.remove('bg-white/10', 'text-gray-200');
+                findWorkers(clickedButton.dataset.skill);
+            }
+
+            async function findWorkers(skill = 'all') {
+                showLoading();
+                // Get contractor location for distance filter
+                let lat = 0, lng = 0;
+                // In a real app we would get contractor location. 
+                // For now we'll pass 0,0 or omit to just get all workers.
+
+                try {
+                    let url = `${API_BASE_URL}/contractor/workers?skill=${skill}`;
+                    // If we had location: url += `&lat=${lat}&lng=${lng}`;
+
+                    const res = await fetch(url);
+                    const workers = await res.json();
+                    renderWorkerList(workers);
+                } catch (e) {
+                    console.error(e);
+                    DOMElements.workerList.innerHTML = '<p class="text-red-400 text-center py-4">Failed to load workers.</p>';
+                } finally {
+                    hideLoading();
+                }
+            }
+
+            function renderWorkerList(workers) {
+                DOMElements.workerList.innerHTML = '';
+                if (!workers || workers.length === 0) {
+                    DOMElements.workerList.innerHTML = '<p class="text-gray-400 text-center py-4">No workers found.</p>';
+                    return;
+                }
+                workers.forEach(worker => {
+                    const skillInfo = SKILLS.find(s => s.id === worker.skill) || { name: 'Worker', icon: 'fa-user-tie' };
+                    const workerEl = document.createElement('div');
+                    workerEl.className = 'bg-white/5 p-3 rounded-lg flex items-center border border-white/20 animate-fade-in';
+                    workerEl.innerHTML = `
+                <div class="mr-4 text-2xl w-8 text-center"><i class="fas ${skillInfo.icon} text-blue-400"></i></div>
+                <div class="flex-grow">
+                    <h4 class="font-semibold">${worker.name}</h4>
+                    <p class="text-sm text-gray-300">${skillInfo.name} ${worker.location ? '<i class="fas fa-map-marker-alt text-green-500 text-xs ml-2"></i>' : ''}</p>
+                </div>
+                <button class="btn btn-secondary text-xs py-1 px-2"><i class="fas fa-phone-alt mr-1"></i> Call</button>
+            `;
+                    DOMElements.workerList.appendChild(workerEl);
+                });
+            }
+
+            function handleBroadcastJob() {
+                if (!DOMElements.jobDescription.value || !DOMElements.jobPayment.value) {
+                    alert('Please fill in all job details.');
+                    return;
+                }
+                showLoading();
+
+                const jobData = {
+                    title: DOMElements.jobDescription.value,
+                    payment: '₹' + DOMElements.jobPayment.value + (document.getElementById('jobTypeSelect').value === 'daily' ? '/day' : ''),
+                    type: document.getElementById('jobTypeSelect').value,
+                    contractor: appState.currentUser.name,
+                    timestamp: new Date()
+                };
+
+                // Emit socket event
+                if (socket) {
+                    socket.emit('broadcastJob', jobData);
+                    alert('Job has been broadcasted to nearby workers!');
+                    DOMElements.jobDescription.value = '';
+                    DOMElements.jobPayment.value = '';
+
+                    // Also add to local view
+                    // availableJobs.unshift(jobData); 
+                    // renderJobList(availableJobs, DOMElements.jobListWorker); // Not for contractor usually, but ok
+                } else {
+                    alert('Connection lost. Cannot broadcast.');
+                }
+
+                hideLoading();
+            }
+
+            function showLoading() { DOMElements.loadingSpinner.classList.remove('hidden'); }
+            function hideLoading() { DOMElements.loadingSpinner.classList.add('hidden'); }
+
+            document.addEventListener('DOMContentLoaded', initApp);
+
+        </script>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,23 @@
+# Deployment files
+node_modules/
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Supabase local
+.supabase/
+
+# Service account (Firebase)
+serviceAccountKey.json
