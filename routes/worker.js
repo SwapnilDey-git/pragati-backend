@@ -19,7 +19,19 @@ router.post('/check-in', async (req, res) => {
       .single();
 
     if (error) throw error;
-    res.status(200).json({ message: 'Checked in successfully.', worker });
+
+    // Transform to camelCase
+    const transformedWorker = {
+      _id: worker.id,
+      name: worker.name,
+      userType: worker.user_type,
+      phone: worker.phone,
+      skill: worker.skill,
+      checkedIn: worker.checked_in,
+      location: worker.location
+    };
+
+    res.status(200).json({ message: 'Checked in successfully.', worker: transformedWorker });
   } catch (error) {
     console.error('Check-in error:', error);
     res.status(500).json({ message: 'Server error.' });
@@ -38,7 +50,19 @@ router.post('/check-out', async (req, res) => {
       .single();
 
     if (error) throw error;
-    res.status(200).json({ message: 'Checked out successfully.', worker });
+
+    // Transform to camelCase
+    const transformedWorker = {
+      _id: worker.id,
+      name: worker.name,
+      userType: worker.user_type,
+      phone: worker.phone,
+      skill: worker.skill,
+      checkedIn: worker.checked_in,
+      location: worker.location
+    };
+
+    res.status(200).json({ message: 'Checked out successfully.', worker: transformedWorker });
   } catch (error) {
     console.error('Check-out error:', error);
     res.status(500).json({ message: 'Server error.' });

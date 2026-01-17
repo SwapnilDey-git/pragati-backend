@@ -35,7 +35,18 @@ router.get('/workers', async (req, res) => {
         const { data: workers, error } = await query;
         if (error) throw error;
 
-        res.status(200).json(workers);
+        // Transform to camelCase
+        const transformedWorkers = workers.map(w => ({
+            _id: w.id,
+            name: w.name,
+            userType: w.user_type,
+            phone: w.phone,
+            skill: w.skill,
+            checkedIn: w.checked_in,
+            location: w.location
+        }));
+
+        res.status(200).json(transformedWorkers);
     } catch (error) {
         console.error('Workers query error:', error);
         res.status(500).json({ message: 'Server error.' });
