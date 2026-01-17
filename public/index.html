@@ -426,9 +426,8 @@
             });
 
             // --- APPLICATION LOGIC ---
-            // Use relative path for API (works on both localhost:3001 and deployed url)
-            const API_BASE_URL = '/api';
-            const SOCKET_URL = '/';
+            const API_BASE_URL = 'https://pragati-backend-production.up.railway.app/api';
+            const SOCKET_URL = 'https://pragati-backend-production.up.railway.app';
             let socket;
 
             let appState = { currentUser: null, selectedSkill: null, workerLocation: null };
