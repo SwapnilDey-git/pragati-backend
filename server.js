@@ -18,6 +18,7 @@ const allowedOrigins = [
   "http://localhost:8000",
   "http://127.0.0.1:8000",
   "https://pragati-backend-production.up.railway.app", // Railway production URL
+  "https://pragati-backend-navy.vercel.app", // Vercel frontend URL
   // Add your production frontend URL here when deploying
   // Example: "https://your-app.vercel.app"
 ];
