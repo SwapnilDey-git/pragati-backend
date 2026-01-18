@@ -58,12 +58,15 @@ router.post('/login', async (req, res) => {
           name: name.trim(),
           user_type: userType,
           phone: phoneNumber,
-          location: `POINT(0 0)` // Default location (will be updated on check-in)
+          location: null // Will be updated on check-in
         }])
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        throw insertError;
+      }
       user = newUser;
     }
 
